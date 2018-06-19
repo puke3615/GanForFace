@@ -6,8 +6,7 @@ from __future__ import print_function, division
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
-from keras.layers import Input, Dense, Reshape, Flatten, Dropout
-from keras.layers import BatchNormalization, Activation, ZeroPadding2D
+from keras.layers import *
 from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
@@ -36,9 +35,9 @@ class RandomWeightedAverage(_Merge):
 
 class WGANGP():
     def __init__(self):
-        self.name = self.__class__.__name__.lower()
-        self.img_rows = 28
-        self.img_cols = 28
+        self.name = os.path.basename(__file__).split('.')[0].lower()
+        self.img_rows = 64
+        self.img_cols = 64
         self.channels = 3
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
         self.latent_dim = 100
@@ -135,27 +134,54 @@ class WGANGP():
 
     def build_generator(self):
 
-        model = Sequential()
-
-        model.add(Dense(128 * 7 * 7, activation="relu", input_dim=self.latent_dim))
-        model.add(Reshape((7, 7, 128)))
-        model.add(UpSampling2D())
-        model.add(Conv2D(128, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-        model.add(UpSampling2D())
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-        model.add(Conv2D(self.channels, kernel_size=4, padding="same"))
-        model.add(Activation("tanh"))
-
-        model.summary()
-
         noise = Input(shape=(self.latent_dim,))
-        img = model(noise)
 
-        return Model(noise, img)
+        x = Dense(32 * self.img_rows * self.img_cols, activation='relu')(noise)
+
+        x = Reshape((self.img_rows, self.img_cols, 32))(x)
+
+        x = Conv2DTranspose(512, kernel_size=3, padding='same')(x)
+        x = BatchNormalization(momentum=0.8)(x)
+        x = Activation("relu")(x)
+
+        x = Conv2DTranspose(256, kernel_size=3, strides=1, padding="same")(x)
+        x = BatchNormalization(momentum=0.8)(x)
+        x = Activation("relu")(x)
+
+        x = Conv2DTranspose(128, kernel_size=3, strides=1, padding="same")(x)
+        x = BatchNormalization(momentum=0.8)(x)
+        x = Activation("relu")(x)
+
+        x = Conv2DTranspose(self.channels, kernel_size=3, padding="same")(x)
+        img = Activation("tanh")(x)
+
+        model = Model(noise, img)
+        model.summary()
+        return model
+
+        # model = Sequential()
+        # model.add(Dense(32 * 64 * 64, activation="relu", input_dim=self.latent_dim))
+        # model.add(Reshape((64, 64, 32)))
+        #
+        # # model.add(UpSampling2D())
+        # model.add(Conv2D(128, kernel_size=4, padding="same"))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Activation("relu"))
+        #
+        # # model.add(UpSampling2D())
+        # model.add(Conv2D(64, kernel_size=4, padding="same"))
+        # model.add(BatchNormalization(momentum=0.8))
+        # model.add(Activation("relu"))
+        #
+        # model.add(Conv2D(self.channels, kernel_size=4, padding="same"))
+        # model.add(Activation("tanh"))
+        #
+        # model.summary()
+        #
+        #
+        # img = model(noise)
+        #
+        # return Model(noise, img)
 
     def build_critic(self):
 
@@ -273,4 +299,4 @@ class WGANGP():
 
 if __name__ == '__main__':
     wgan = WGANGP()
-    wgan.train(epochs=300000, batch_size=32, sample_interval=100)
+    wgan.train(epochs=3000000, batch_size=32, sample_interval=50)
