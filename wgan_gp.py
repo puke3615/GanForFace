@@ -24,6 +24,8 @@ import numpy as np
 
 from data_loader import load_data
 
+ANIME_PATH = 'G:/Video/DeepLearning/data'
+
 
 class RandomWeightedAverage(_Merge):
     """Provides a (random) weighted average between real and generated image samples"""
@@ -231,7 +233,8 @@ class WGANGP():
 
         # Load the dataset
         # (X_train, _), (_, _) = mnist.load_data()
-        generator = load_data(batch_size, self.img_rows, self.img_cols)
+        # generator = load_data(batch_size, self.img_rows, self.img_cols)
+        generator = load_data(batch_size, self.img_rows, self.img_cols, imgaug=True, path=ANIME_PATH)
 
         # Rescale -1 to 1
         # X_train = (X_train.astype(np.float32) - 127.5) / 127.5

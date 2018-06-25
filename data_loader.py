@@ -10,10 +10,12 @@ PATH = 'G:/Dataset/CelebA/Img/img_align_celeba_png.7z/dataset'
 
 FACE_PATH = 'G:/Dataset/FacialKeyPointDetection'
 
+ANIME_PATH = 'G:/Video/DeepLearning/data'
 
-def load_data(batch_size=32, height=28, width=28, imgaug=False):
-    if not os.path.exists(PATH):
-        raise Exception('File folder "%s" not found' % PATH)
+
+def load_data(batch_size=32, height=28, width=28, imgaug=False, path=PATH):
+    if not os.path.exists(path):
+        raise Exception('File folder "%s" not found' % path)
     generator = ImageDataGenerator(
         # samplewise_std_normalization=True,
         # samplewise_center=True,
@@ -25,14 +27,15 @@ def load_data(batch_size=32, height=28, width=28, imgaug=False):
         # zoom_range=.01,
     )
     iterator = generator.flow_from_directory(
-        PATH, target_size=(height, width), batch_size=batch_size)
+        path, target_size=(height, width), batch_size=batch_size)
     if imgaug:
         while True:
             batch, _ = next(iterator)
             batch = img_aug(batch)
             yield batch, _
     else:
-        return iterator
+        while True:
+            yield next(iterator)
 
 
 def load_face_data(batch_size=32, height=28, width=28, offset=30, channel=3, imgaug=False):
@@ -108,25 +111,24 @@ def img_aug(images):
         iaa.Multiply((0.8, 1.2), per_channel=0.2),
         # Apply affine transformations to each image.
         # Scale/zoom them, translate/move them, rotate them and shear them.
-        iaa.Affine(
-            scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
-            translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-            rotate=(-15, 15),
-            shear=(-8, 8)
-        )
+        # iaa.Affine(
+        #     scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
+        #     translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
+        #     rotate=(-15, 15),
+        #     shear=(-8, 8)
+        # )
     ], random_order=True)  # apply augmenters in random order
 
     return seq.augment_images(images)
 
 
 if __name__ == '__main__':
-    # generator = load_data()
-    # for x, y in generator:
-    #     print(x.shape)
-    #     print(y.shape)
+    generator = load_data(3, 96, 96, path=ANIME_PATH, imgaug=True)
+    data, _ = next(generator)
+    [Image.fromarray(image).show() for image in data]
 
-    data = load_face_data(3, 128, 128, offset=30, imgaug=True)
-    [Image.fromarray(image).show() for image in next(data)]
+    # data = load_face_data(3, 128, 128, offset=30, imgaug=True)
+    # [Image.fromarray(image).show() for image in next(data)]
 
     # sep = ''.join(['='] * 200)
     # print('Epoch %d %s' % (10, sep))
